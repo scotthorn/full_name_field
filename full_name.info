@@ -1,0 +1,6 @@
+name = Full Name Field
+description = Defines 3-box name fields.
+package = Fields
+core = 7.x
+dependencies[] = field
+files[] = full_name.module

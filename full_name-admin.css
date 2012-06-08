@@ -1,0 +1,12 @@
+.full_name-name {
+  float: left;
+  margin: 0 30px 0 0;
+}
+
+.full_name-name div input{
+  size:40px;
+}
+
+#edit-field-full-und-0-full-name-combined-wrapper-first{
+  size:40px;
+}

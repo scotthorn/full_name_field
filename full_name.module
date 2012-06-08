@@ -1,0 +1,267 @@
+<?php
+
+/**
+ * Implements hook_field_info().
+ */
+function full_name_field_info() {
+  return array(
+    'full_name' => array(
+      'label' => t('Full Name'),
+      'description' => t('Stores first, middle, and last names in separate text boxes'),
+      'settings' => array(),
+      'instance_settings' => array(),
+      'default_widget' => 'full_name_combined',
+      'default_formatter' => 'full_name_default',
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_validate().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_validate($obj_type, $object, $field, $instance, $langcode, &$items, &$errors) {
+  if ($field['type'] == 'full_name') {
+    $columns = array(
+     'first',
+     'middle',
+     'last',
+    );
+    foreach ($items as $delta => $item) {
+      foreach ($columns as $column) {
+        if (!empty($item[$column]) && strlen($item[$column]) < 255) {
+          $errors[$field['field_name']][$delta][] = array(
+            'error' => 'full_name_255',
+            'message' => t('%name: The %column may not be larger than %max.', array(
+              '%column' => $column,
+              '%name' => $instance['label'],
+              '%max' => '255',
+            )),
+          );
+        }
+      }
+    }
+  }
+}
+
+/**
+ * Implements hook_field_is_empty().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_is_empty($item, $field) {
+  if ($field['type'] == 'full_name') {
+    if (empty($item['first']) && empty($item['middle']) && empty($item['last'])) {
+      return TRUE;
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * Implements hook_field_settings_form().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_settings_form($field, $instance, $has_data) {
+
+}
+
+/**
+ * Implements hook_field_settings_form().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_instance_settings_form($field, $instance) {
+  //return $form;
+}
+
+
+///////////////// Widgets ///////////////////////
+
+
+/**
+ * Implements hook_widget_info().
+ */
+function full_name_field_widget_info() {
+  return array(
+    'full_name_combined' => array(
+      'label' => t('3 text fields'),
+      'description' => t('Allow the user to enter each name individually.'),
+      'field types' => array('full_name'),
+      'settings' => array(),
+      'behaviors' => array(
+        'multiple values' => FIELD_BEHAVIOR_DEFAULT,
+        'default value' => FIELD_BEHAVIOR_DEFAULT,
+      ),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_widget_settings_form().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_widget_settings_form($field, $instance) {
+  $form = array();
+
+  $widget = $instance['widget'];
+  $settings = $widget['settings'];
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_widget_form().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_widget_form(&$form, &$form_state, $field, $instance, $langcode, $items, $delta, $element) {
+  $base = $element;
+
+  if ($instance['widget']['type'] == 'full_name_combined') {
+    $default = NULL;
+    $element['full_name_wrapper']['#theme'] = 'full_name_combined_wrapper';
+    $element['#attached']['css'][] = drupal_get_path('module', 'full_name') . '/full_name-admin.css';
+	$element['#element_validate'] = array('_full_name_widget_validate');
+
+    $element['full_name_wrapper']['last'] = array(
+      '#type' => 'textfield',
+      '#title' => t(''),
+      '#description' => t('Last'),
+      '#default_value' => isset($items[$delta]['last']) ? $items[$delta]['last'] : '',
+      '#size' => '40',
+    ) + $base;  
+    $element['full_name_wrapper']['middle'] = array(
+      '#type' => 'textfield',
+      '#title' => t(''),
+      '#description' => t('Middle'),
+      '#default_value' => isset($items[$delta]['middle']) ? $items[$delta]['middle'] : '',
+      '#size' => '40',
+    ) + $base;  
+    $element['full_name_wrapper']['first'] = array(
+      '#type' => 'textfield',
+      '#title' => t(''),
+      '#description' => t('First'),
+      '#default_value' => isset($items[$delta]['first']) ? $items[$delta]['first'] : '',
+      '#size' => '40',
+	  '#hidden' => array('#label' => $instance['label'],),
+    ) + $base;
+	
+	$element['#hidden']['#full_name_label'] = $instance['label'];
+  }
+
+  return $element;
+}
+
+/**
+ *  Validator function for the field widget
+ */
+function _full_name_widget_validate($element, &$form_state){
+  if($form_state['complete form']['#form_id'] == 'field_ui_edit_form')
+    return;
+	
+  $v = $element['full_name_wrapper'];
+  $values = array(
+    'first' => $v['first']['#value'],
+	'middle' => $v['middle']['#value'],
+	'last' => $v['last']['#value'],
+  );
+  form_set_value($element, $values, $form_state);
+}
+
+/**
+ * Implements hook_theme().
+ */
+function full_name_theme() {
+  return array(
+    'full_name_combined_wrapper' => array(
+      'render element' => 'element',
+    ),
+  );
+}
+
+/**
+ * Theme function for the combined_wrapper widget.
+ *
+ * @ingroup themeable
+ */
+function theme_full_name_combined_wrapper($variables) {
+  $element = $variables['element'];
+  $first = drupal_render($element['first']);
+  $middle = drupal_render($element['middle']);
+  $last = drupal_render($element['last']);
+
+  return 
+  '<label class="full-name-label">' . $element['first']['#hidden']['#label'] . '</label><div class="full_name-wrapper clearfix">
+  <div class="full_name-name">' . $first . '</div>
+  <div class="full_name-name">' . $middle . '</div>
+  <div class="full_name-name">' . $last . '</div>
+  </div>';
+}
+
+
+
+///////////////// Formatters ///////////////////////
+
+/**
+ * Implements hook_field_formatter_info().
+ */
+function full_name_field_formatter_info() {
+  return array(
+    'full_name_default' => array(
+      'label' => t('Default'),
+      'field types' => array('full_name'),
+    ),
+  );
+}
+
+/**
+ * Implements hook_field_formatter_settings_summary().
+ */
+function full_name_field_formatter_settings_summary($field, $instance, $view_mode) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $summary = '';
+
+  return $summary;
+}
+
+/**
+ * Implements hook_field_formatter_settings_form().
+ */
+function full_name_field_formatter_settings_form($field, $instance, $view_mode, $form, &$form_state) {
+  $display = $instance['display'][$view_mode];
+  $settings = $display['settings'];
+
+  $form = array();
+
+  return $form;
+}
+
+/**
+ * Implements hook_field_formatter_view().
+ */
+function full_name_field_formatter_view($obj_type, $object, $field, $instance, $langcode, $items, $display) {
+  $element = array();
+  $settings = $display['settings'];
+
+  switch ($display['type']) {
+    case 'full_name_default':
+      foreach ($items as $delta => $item) {
+        $output = t('@first @middle @last', array(
+          '@first' => $item['first'],
+          '@middle' => $item['middle'],
+          '@last' => $item['last'],
+        ));
+        
+        $element[$delta] = array('#markup' => $output);
+      }
+      break;
+  }
+
+  return $element;
+}

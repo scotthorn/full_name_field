@@ -1,0 +1,32 @@
+<?php
+
+/**
+ * Implements hook_field_schema().
+ *
+ * Pseudo-hook.
+ */
+function full_name_field_schema($field) { 
+  if ($field['type'] == 'full_name') {
+    $schema['columns']['first'] = array( 
+        'type' => 'varchar',
+        'length' => 255, 
+        'not null' => FALSE,
+    ); 
+    $schema['columns']['middle'] = array( 
+        'type' => 'varchar',
+        'length' => 255, 
+        'not null' => FALSE,
+    );
+    $schema['columns']['last'] = array( 
+        'type' => 'varchar',
+        'length' => 255, 
+        'not null' => FALSE,
+    );
+    $schema['indexes'] = array( 
+        'first' => array('first'), 
+        'middle' => array('middle'),
+        'last' => array('last'),
+    );
+    return $schema;
+  }
+}
